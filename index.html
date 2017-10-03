@@ -1,0 +1,209 @@
+<!--
+License: Public domain
+More info and jargon: https://creativecommons.org/publicdomain/zero/1.0/
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="UTF-8">
+  <title>Too Simple IOTA Seed Generator</title>
+  </head>
+  <body>
+  <p>Hello, this is probably the simplest IOTA seed generator. But why so simple?</p>
+  <ul>
+    <li>For security. You can inspect the unminified, no-hassle, ultra light and small HTML/Javascript source yourself to determine if this page sends any requests outside or does any other kind of trickery to steal your seed.</li>
+    <li>For convenience. Just open the page, generate a seed of your liking, and copy it to clipboard or print it on paper.</li>
+    <li>Nothing else really. I was hoping to come up with more reasons but that's it my paranoid IOTAn.</li>
+  </ul>
+
+  <span>Random tips:</span>
+  <ol>
+    <li>You can save this HTML file on your computer to use it offline if you wish.</li>
+    <li>Many printers save every printed document on their hard drivers so it might be good to avoid public and workplace printers.</li>
+    <li>This work is public domain. Use it how ever you want.</li>
+  </ol>
+
+  <button id="button_generate_seed">Generate Seed</button>
+  <button id="button_print"">Print Seed</button>
+  <button id="button_clipboard"">Copy to Clipboard</button>
+  <br />
+  <br />
+
+  <div class="print_view">
+    <span>Your seed:</span>
+    <br />
+    <span class="print_view seed" style="font-size:20px; font-family: monospace; letter-spacing: 2px; display: block; padding-bottom: 50px"></span>
+  </div>
+
+  <script type="text/javascript">
+    function BindButtons()
+    {
+      var generateSeedButton = document.getElementById("button_generate_seed");
+      generateSeedButton.onclick = ClickGenerateSeed;
+    
+      var clipboardButton = document.getElementById("button_clipboard");
+      clipboardButton.onclick = ClickClipboard;
+
+      var printButton = document.getElementById("button_print");
+      printButton.onclick = ClickPrintSeed;
+
+      window.onafterprint = PrintCompleted;
+
+      // Detect print completion with Chrome
+      if (window.matchMedia)
+      {
+        var mediaQueryList = window.matchMedia('print');
+
+        mediaQueryList.addListener(function(mql)
+        {
+          if (!mql.matches)
+          {
+            onafterprint();
+          }
+        });
+      }
+    }
+
+    function ClickGenerateSeed()
+    {
+      var seed = GenerateSeed();
+
+      var seedElements = document.getElementsByClassName("seed");     
+
+      // Set the text of each each redundant seed element
+      for (var i = 0; i < seedElements.length; ++i)
+      {
+        var element = seedElements[i];
+        element.innerHTML = seed;
+      }
+    }
+
+    function GenerateSeed()
+    {
+      var seed = "";
+
+      var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ9";
+      var max = alphabet.length - 1;
+
+      for (var i = 0; i < 81; i++)
+      {
+        // Get a random 32 bit number and put it into an array
+        var byteArray = new Uint32Array(1);
+        window.crypto.getRandomValues(byteArray);
+
+        // Divide by 2^32, which is the max number we can find in the array
+        var randomNum = byteArray[0] / 0x100000000;
+
+        // Transform the random decimal number into a whole number
+        var index = Math.floor(randomNum * (max + 1));
+
+        seed += alphabet[index];
+      }
+
+      return seed;
+    }
+
+    function ClickClipboard()
+    {
+      var seedElement = document.getElementsByClassName("seed")[0];
+
+      // Do text selection
+      var selection = window.getSelection();
+      var range = document.createRange();
+      range.selectNodeContents(seedElement);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Copy seed to clipboard and remove selection
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    }
+
+    function ClickPrintSeed()
+    {
+      HideElementsBeforePrinting();
+
+      window.print();
+    }
+
+    function PrintCompleted()
+    {
+      ShowElementsAfterPrinting();
+    }
+
+    function HideElementsBeforePrinting()
+    {
+      var allElements = document.body.getElementsByTagName("*");
+
+      // Hide every element first
+      for (var i = 0; i < allElements.length; ++i)
+      {
+        var element = allElements[i];
+        element.style.display = "none";
+      }
+
+      // Display all print_view class elements
+      var printView = document.getElementsByClassName("print_view");
+      for (var i = 0; i < printView.length; ++i)
+      {
+        var element = printView[i];
+        element.style.display = "block";
+      }
+    }
+
+    function ShowElementsAfterPrinting()
+    {
+      var allElements = document.body.getElementsByTagName("*");
+
+      // Re-display all elements except "script" elements
+      for (var i = 0; i < allElements.length; ++i)
+      {
+        var element = allElements[i];
+
+        // Don't display possible script elements
+        if (element.nodeName == "SCRIPT")
+          continue;
+
+        element.style.display = "";
+      }
+
+      // Hide all redundant seed elements except the first one
+      var printView = document.getElementsByClassName("seed");
+      for (var i = 0; i < printView.length; ++i)
+      {
+        var element = printView[i];
+
+        if (i == 0)
+        {
+          element.style.display = "block";
+          continue;
+        }
+
+        var element = printView[i];
+        element.style.display = "none";
+      }
+    }
+
+    // Create multiple redundant elements to display seed on printed document
+    function CreateRedundantElements()
+    {
+      var sourceElement = document.getElementsByClassName("seed")[0];
+
+      for (var i = 0; i < 19; i++)
+      {
+        var clone = sourceElement.cloneNode(true);
+        sourceElement.parentElement.appendChild(clone);
+
+        clone.style.display = "none";
+      }
+    }
+
+    BindButtons();
+
+    CreateRedundantElements();
+
+    // Generate seed on load
+    ClickGenerateSeed();
+  </script>
+  </body>
+</html>
